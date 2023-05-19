@@ -4,6 +4,7 @@
 # Usage
 テキストの読み込み方で3種類の起動方法がある
 
+```
 Usage: morse-rs.exe [OPTIONS] [\<TEXT\>]
 
 Arguments:
@@ -20,7 +21,7 @@ Options:
   -i, --input <FILE>           Read message from file <br>
   -h, --help                   Print help <br>
   -V, --version                Print version <br>
-
+```
 ex. <br>
    ```morse-rs "cq cq cq"``` <br>
    ```morse-rs --pipe < hoge.txt``` <br>
@@ -47,7 +48,7 @@ ex. <br>
    - 音量を指数関数で変化するようにした<br>
      音量(0-1)をそのまま使用すると、いきなり大きくなり、後半は殆ど変化しない感じとなるため<br>
      オーディオボリュームのＣタイプの抵抗曲線となるように変換式を加えた。<br>
-     自身の聴感では、2.5がちょうどよいのでデフォルトとした。<br?
+     自身の聴感では、2.5がちょうどよいのでデフォルトとした。<br>
    - 実行中に対応する行または文字を出力することで、どの音が出ているのかわかるようにした。<br>
    - コマンドラインの引数解析を `clap` で実現した。<br>
      3種類の電文の与え方についての、排他チェックを `clap` で行うことができた。<br>
