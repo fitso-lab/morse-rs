@@ -1,0 +1,16 @@
+[package]
+name = "morse-rs"
+version = "0.1.0"
+authors = ["fitso-2120 <txmiki@gmail.com>"]
+edition = "2021"
+keywords = ["morse", "#sound"]
+license-file = "LICENSE-MIT.txt"
+
+[dev-dependencies]
+assert_cmd = "*"
+predicates = "*"
+
+[dependencies]
+clap = { version = "*", features = ["derive"] }
+cpal = "*"
+once_cell = "*"
