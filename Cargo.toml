@@ -13,4 +13,3 @@ predicates = "*"
 [dependencies]
 clap = { version = "*", features = ["derive"] }
 cpal = "*"
-once_cell = "*"

@@ -8,7 +8,7 @@ pub enum DumpType {
     Line,
 }
 
-#[derive(Parser, Debug)]
+#[derive(Clone, Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// Morse code speed in `wpm` units

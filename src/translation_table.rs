@@ -1,14 +1,9 @@
 use std::collections::HashMap;
-use once_cell::sync::Lazy;
-
-pub static TRANSLATION_TABLE: Lazy<HashMap<char, &'static str>> = Lazy::new(|| {
-    return set_translation_table();
-});
 
 /// 文字 -> モールスコード変換テーブルを作成する
-fn set_translation_table() -> HashMap<char, &'static str> {
-    let mut table: HashMap<char, &str> = HashMap::new();
-    let tbl: Vec<(Vec<char>, &str)> = vec![
+pub fn set_translation_table() -> HashMap<char, &'static str> {
+    let mut table = HashMap::new();
+    let tbl = vec![
         (vec![' '], " "),
         //
         // 英文字

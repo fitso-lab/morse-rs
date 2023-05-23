@@ -1,14 +1,19 @@
 use std::{
+    collections::HashMap,
     fs::File,
     io::{stdin, BufRead, BufReader},
 };
 
-use morse_rs::morse::{morse, word_space};
-use morse_rs::{args::get_args, morse::genarate_stream};
+use cpal::Stream;
+use morse_rs::{
+    args::get_args,
+    morse::{genarate_stream, Morse},
+};
 
-/// Intra-character space
+/// Intra-character space <br>
 /// Inter-character space
 
+/// ```
 /// 10 WPM = 50 CPM(=PARIS方式の通信速度)
 /// PARIS = 50短点
 ///   内訳
@@ -36,44 +41,68 @@ use morse_rs::{args::get_args, morse::genarate_stream};
 ///             欧文普通語 CPMとほぼ同じ
 ///             欧文暗語 CPMの８-９割
 /// 600Hz ... 55.555 回 per 33.33ms
+/// ```
+
+fn play<R>(reader: &mut R, is_first: &mut bool, morse: &Morse, stream: &Stream)
+where
+    R: BufRead,
+{
+    for (_, line) in reader.lines().enumerate() {
+        if let Ok(mut line) = line {
+            if line.starts_with("#!") {
+                // 行頭がマクロ定義ならマクロとして解釈
+                let mut split = line.split('!');
+                split.next();
+                if let Some(l) = split.next() {
+                    if l.len() == 0 {
+                        continue;
+                    }
+                    line = l.to_string();
+                    println!("Option({})", line);
+                    continue;
+                }
+            } else {
+                // '#'以降の文字列をコメントとして破棄
+                if let Some(l) = line.split('#').next() {
+                    line = l.trim().to_string();
+                }
+                if line.len() == 0 {
+                    // 空行は無視
+                    continue;
+                }
+            }
+            if *is_first {
+                *is_first = false;
+            } else {
+                morse.word_space();
+            }
+
+            morse.play(&line.as_str(), &stream);
+        }
+    }
+}
 
 fn main() {
     let opt = get_args();
 
-    let dit_duration: u32 = 60 * 1000 / (50 * opt.wpm as u32);
+    let stream = genarate_stream(opt.frequency, opt.volume, opt.power);
 
-    let stream = genarate_stream(&opt);
+    let streams = HashMap::from([("default", &stream)]);
+
+    let morse = Morse::new(&opt);
 
     if let Some(ref text) = opt.text {
         // コマンドラインに電文を記述
-        morse(&text, &opt, &stream, dit_duration);
+        morse.play(&text, &stream);
     } else if let Some(ref input) = opt.input {
         // 電文ファイルを指定
         let mut is_first = true;
-        let reader = BufReader::new(File::open(input.to_str().unwrap()).unwrap());
-        for (_, line) in reader.lines().enumerate() {
-            if is_first {
-                is_first = false;
-            } else {
-                word_space(dit_duration);
-            }
-            let line = line.unwrap();
-
-            morse(&line.as_str(), &opt, &stream, dit_duration);
-        }
+        let mut reader = BufReader::new(File::open(input.to_str().unwrap()).unwrap());
+        play(&mut reader, &mut is_first, &morse, &stream);
     } else {
         // 標準入力から電文を取得
         let mut is_first = true;
-        let reader = BufReader::new(stdin());
-        for (_, line) in reader.lines().enumerate() {
-            if is_first {
-                is_first = false;
-            } else {
-                word_space(dit_duration);
-            }
-            let line = line.unwrap();
-
-            morse(&line, &opt, &stream, dit_duration);
-        }
+        let mut reader = BufReader::new(stdin());
+        play(&mut reader, &mut is_first, &morse, &stream);
     }
 }

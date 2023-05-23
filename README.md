@@ -11,16 +11,16 @@ Arguments:
   \<TEXT\>  The message directly as a command line argument
 
 Options:
-  -w, --wpm <WPM>              Morse code speed in `wpm` units [default: 25] <br>
-  -f, --frequency <FREQUENCY>  Morse code frequency [default: 600.0] <br>
-  -v, --volume <VOLUME>        Morse code volume [default: 0.2] <br>
-      --power <POWER>          power for audio volume [default: 2.5] <br>
-  -d, --dump <DUMP>            Dump message line by per char or per line [possible values: char, line] <br>
-      --debug                  Perform command analysis only <br>
-  -p, --pipe                   Read messages from standard input <br>
-  -i, --input <FILE>           Read message from file <br>
-  -h, --help                   Print help <br>
-  -V, --version                Print version <br>
+  -w, --wpm <WPM>              Morse code speed in `wpm` units [default: 25]
+  -f, --frequency <FREQUENCY>  Morse code frequency [default: 600.0]
+  -v, --volume <VOLUME>        Morse code volume [default: 0.2]
+      --power <POWER>          power for audio volume [default: 2.5]
+  -d, --dump <DUMP>            Dump message line by per char or per line [possible values: char, line]
+      --debug                  Perform command analysis only
+  -p, --pipe                   Read messages from standard input
+  -i, --input <FILE>           Read message from file
+  -h, --help                   Print help
+  -V, --version                Print version
 ```
 ex. <br>
    ```morse-rs "cq cq cq"``` <br>
