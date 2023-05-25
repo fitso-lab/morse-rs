@@ -21,27 +21,38 @@ Options:
   -i, --input <FILE>           Read message from file
   -h, --help                   Print help
   -V, --version                Print version
+
+ex.
+  morse-rs "cq cq cq"
+  morse-rs --pipe < hoge.txt
+  morse-rs --input hoge.txt
 ```
-ex. <br>
-   ```morse-rs "cq cq cq"``` <br>
-   ```morse-rs --pipe < hoge.txt``` <br>
-   ```morse-rs --input hoge.txt"``` <br>
 
 # 和文符号と記号符号の一部について
-   LCWO.netの「テキストをCWに変換」ページから辿った、[jscwlib](https://git.fkurz.net/dj1yfk/jscwlib/)から
-   対応する符号をコピーしました。<br>
-   DJ1YFK様並びにDJ5CW様に感謝です。
+  LCWO.netの「テキストをCWに変換」ページから辿った、[jscwlib](https://git.fkurz.net/dj1yfk/jscwlib/)から
+  対応する符号をコピーしました。<br>
+  DJ1YFK様並びにDJ5CW様に感謝です。
 
-   JARLとARRLでも異なっていて<br>
-   ```%``` を ```<0/0>``` としているサイトがあったりと、ローカルルールがあるのかもしれません。<br>
-   記号符号の一部は、定義元が不明で通用するのかどうか不明です。<br>
-   JARLとARRL共通は、```.,?-``` のようです。
+  JARLとARRLでも異なっていて<br>
+  ```%``` を ```<0/0>``` としているサイトがあったりと、ローカルルールがあるのかもしれません。<br>
+  記号符号の一部は、定義元が不明で通用するのかどうか不明です。<br>
+  JARLとARRL共通は、```.,?-``` のようです。
 
 
 # About text
-   英文と和文。英字については大文字小文字問わない。和文はカタカナ・ひらがな問わない<br>
-   ```<>```で囲んだ複数の文字は、文字間の短点3つ分の待ち無しに一文字のように出力する。
+  英文と和文。英字については大文字小文字問わない。和文はカタカナ・ひらがな問わない<br>
+  ```<>```で囲んだ複数の文字は、文字間の短点3つ分の待ち無しに一文字のように出力する。
    
+  - `#` 以降、行末までは、注釈として無視します。
+  - 行頭が `#!` の行は、オプション指定[^1]行と解釈します。
+    - オプションは、
+      - `-w, --wpm <WPM>`
+      - `-f, --frequency <FREQUENCY>`
+      - `-v, --volume <VOLUME>`
+      - `-l, --label <LABEL>`
+    - 基本は、`-w -f -v` です。`-l` で、名前をつけておくと、`-l` で名前を指定するだけで、以前の定義を利用できます。
+[^1]: コマンドラインオプションと同じに見えますが、パーサーが違うため、解釈されないことがあります。
+
 # Install
 
 # Improvement

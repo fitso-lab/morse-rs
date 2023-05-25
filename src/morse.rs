@@ -25,15 +25,16 @@ pub fn genarate_stream(frequency: f32, volume: f32, power: f32) -> Stream {
             }
         }
     }
+
     let host = cpal::default_host();
 
     let device = host
         .default_output_device()
         .expect("failed to find output device");
-    println!("Output device: {}", device.name().unwrap());
+    // println!("Output device: {}", device.name().unwrap());
 
     let config: StreamConfig = device.default_output_config().unwrap().into();
-    println!("Default output config: {:?}", config);
+    // println!("Default output config: {:?}", config);
 
     let sample_rate = config.sample_rate.0 as f32;
     let channels = config.channels as usize;
@@ -68,24 +69,36 @@ pub fn genarate_stream(frequency: f32, volume: f32, power: f32) -> Stream {
     return stream;
 }
 
+pub fn calc_dit(wpm: u8) -> u32 {
+    return 60 * 1000 / (50 * wpm as u32);
+}
+
 #[derive(Clone)]
 pub struct Morse {
     table: HashMap<char, &'static str>,
 
     dump: Option<DumpType>,
-    dit_duration: u32,
+
+    //
+    pub dit_duration: u32,
+    pub frequency: f32,
+    pub volume: f32,
+    pub wpm: u8,
 }
 
 impl Morse {
     pub fn new<'a>(opt: &'a Args) -> Morse {
         let table = set_translation_table();
-        let dit_duration = 60 * 1000 / (50 * opt.wpm as u32);
+        let dit_duration = calc_dit(opt.wpm);
         // streams.insert("default", &stream);
 
         return Morse {
+            table,
             dump: opt.dump.clone(),
             dit_duration,
-            table,
+            frequency: opt.frequency,
+            volume: opt.volume,
+            wpm: opt.wpm,
         };
     }
 

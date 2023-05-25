@@ -7,7 +7,7 @@ use std::{
 use cpal::Stream;
 use morse_rs::{
     args::get_args,
-    morse::{genarate_stream, Morse},
+    morse::{calc_dit, genarate_stream, Morse},
 };
 
 /// Intra-character space <br>
@@ -43,22 +43,65 @@ use morse_rs::{
 /// 600Hz ... 55.555 回 per 33.33ms
 /// ```
 
-fn play<R>(reader: &mut R, is_first: &mut bool, morse: &Morse, stream: &Stream)
+fn play<R>(reader: &mut R, is_first: &mut bool, morse: &mut Morse, stream: &mut Stream)
 where
     R: BufRead,
 {
     for (_, line) in reader.lines().enumerate() {
         if let Ok(mut line) = line {
             if line.starts_with("#!") {
-                // 行頭がマクロ定義ならマクロとして解釈
+                // 行頭がオプション定義ならオプションとして解釈
                 let mut split = line.split('!');
                 split.next();
                 if let Some(l) = split.next() {
                     if l.len() == 0 {
                         continue;
                     }
-                    line = l.to_string();
-                    println!("Option({})", line);
+                    let mut s = l.split_whitespace();
+
+                    let mut frequency = morse.frequency;
+                    let mut volume = morse.volume;
+                    let mut wpm = morse.wpm;
+
+                    loop {
+                        match s.next() {
+                            Some("--frequency") => {
+                                if let Some(v) = s.next() {
+                                    // 数値を取り込む
+                                    frequency = v.parse().unwrap();
+                                }
+                            }
+                            Some("--volume") => {
+                                if let Some(v) = s.next() {
+                                    // 数値を取り込む
+                                    volume = v.parse().unwrap();
+                                }
+                            }
+                            Some("--wpm") => {
+                                if let Some(v) = s.next() {
+                                    // 数値を取り込む
+                                    wpm = v.parse().unwrap();
+                                }
+                            }
+                            // 想定外のものは無視
+                            Some(_) => {}
+                            // 取り出せなくなれば終了
+                            None => break,
+                        }
+                    }
+                    // TODO 範囲チェックが必要！
+                    morse.frequency = frequency;
+                    morse.volume = volume;
+                    morse.wpm = wpm;
+                    morse.dit_duration = calc_dit(wpm);
+
+                    // TODO Powerも保持する？
+                    *stream = genarate_stream(frequency, volume, 2.5);
+
+                    println!(
+                        "Option({}): frequency({}) volume({})",
+                        line, frequency, volume
+                    );
                     continue;
                 }
             } else {
@@ -85,11 +128,11 @@ where
 fn main() {
     let opt = get_args();
 
-    let stream = genarate_stream(opt.frequency, opt.volume, opt.power);
+    let mut stream = genarate_stream(opt.frequency, opt.volume, opt.power);
 
     let streams = HashMap::from([("default", &stream)]);
 
-    let morse = Morse::new(&opt);
+    let mut morse = Morse::new(&opt);
 
     if let Some(ref text) = opt.text {
         // コマンドラインに電文を記述
@@ -98,11 +141,11 @@ fn main() {
         // 電文ファイルを指定
         let mut is_first = true;
         let mut reader = BufReader::new(File::open(input.to_str().unwrap()).unwrap());
-        play(&mut reader, &mut is_first, &morse, &stream);
+        play(&mut reader, &mut is_first, &mut morse, &mut stream);
     } else {
         // 標準入力から電文を取得
         let mut is_first = true;
         let mut reader = BufReader::new(stdin());
-        play(&mut reader, &mut is_first, &morse, &stream);
+        play(&mut reader, &mut is_first, &mut morse, &mut stream);
     }
 }
