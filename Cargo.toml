@@ -11,6 +11,7 @@ assert_cmd = "*"
 predicates = "*"
 
 [dependencies]
+anyhow = "*"
 clap = { version = "*", features = ["derive"] }
 cpal = "*"
 stringreader = "*"

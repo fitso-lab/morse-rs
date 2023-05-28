@@ -5,12 +5,12 @@ use std::{
     str::Split,
 };
 
-use stringreader::StringReader;
-
+use anyhow::{anyhow, Result};
 use morse_rs::{
     args::{check_range, get_args, Args},
     morse::{calc_dit, genarate_stream, Morse},
 };
+use stringreader::StringReader;
 
 /// Intra-character space <br>
 /// Inter-character space
@@ -45,7 +45,7 @@ use morse_rs::{
 /// 600Hz ... 55.555 回 per 33.33ms
 /// ```
 
-fn play<R>(reader: &mut R, morse: &mut Morse)
+fn play<R>(reader: &mut R, morse: &mut Morse) -> Result<()>
 where
     R: BufRead,
 {
@@ -90,7 +90,9 @@ where
                                         // 数値を取り込む
                                         o_frequency = Some(v.parse().unwrap());
                                     } else {
-                                        eprintln!("Warning: Multiple 'frequency' are defined.")
+                                        return Err(anyhow!(
+                                            "Warning: Multiple 'frequency' are defined."
+                                        ));
                                     }
                                 }
                             }
@@ -100,7 +102,9 @@ where
                                         // 数値を取り込む
                                         o_volume = Some(v.parse().unwrap());
                                     } else {
-                                        eprintln!("Warning: Multiple `volume` are defined.")
+                                        return Err(anyhow!(
+                                            "Warning: Multiple `volume` are defined."
+                                        ));
                                     }
                                 }
                             }
@@ -110,7 +114,9 @@ where
                                         // 数値を取り込む
                                         o_wpm = Some(v.parse().unwrap());
                                     } else {
-                                        eprintln!("Warning: Multiple `wpm` are defined.")
+                                        return Err(anyhow!(
+                                            "Warning: Multiple `wpm` are defined."
+                                        ));
                                     }
                                 }
                             }
@@ -120,13 +126,15 @@ where
                                         // 重複チェック
                                         o_player = Some(v.trim().to_string());
                                     } else {
-                                        eprintln!("Warning: Multiple `player` are defined.")
+                                        return Err(anyhow!(
+                                            "Warning: Multiple `player` are defined."
+                                        ));
                                     }
                                 }
                             }
                             // 想定外のものは無視
                             _ => {
-                                eprintln!("Warning: Undefined word({}).", w);
+                                return Err(anyhow!("Warning: Undefined word({}).", w));
                             }
                         }
                     } else {
@@ -150,7 +158,7 @@ where
                 opt.power = morse.power;
 
                 //TODO 範囲チェックエラーは、メッセージを出力して終了。暫定
-                check_range(&opt);
+                check_range(&opt)?;
                 if let Some(ref w) = o_player {
                     if o_frequency.is_none() && o_volume.is_none() && o_wpm.is_none() {
                         // すべて指定なしの場合は、定義されたプレイヤーを参照する
@@ -161,7 +169,7 @@ where
                             wpm = *w_wpm;
                             morse.dit_duration = *w_dit_duration;
                         } else {
-                            eprintln!("Warning: `player`({}) is not defined.", w)
+                            return Err(anyhow!("Warning: `player`({}) is not defined.", w));
                         }
                     } else {
                         // どれか一つでも指定されているのなら、'player'定義として登録
@@ -196,10 +204,12 @@ where
 
         morse.play(&line, &stream);
     }
+
+    return Ok(());
 }
 
-fn main() {
-    let opt = get_args();
+fn main() -> Result<()> {
+    let opt = get_args()?;
 
     let mut morse = Morse::new(&opt);
 
@@ -207,14 +217,16 @@ fn main() {
         // コマンドラインに電文を記述
         let reader = StringReader::new(text);
         let mut bufreader = BufReader::new(reader);
-        play(&mut bufreader, &mut morse);
+        play(&mut bufreader, &mut morse)?;
     } else if let Some(ref input) = opt.input {
         // 電文ファイルを指定
         let mut reader = BufReader::new(File::open(input.to_str().unwrap()).unwrap());
-        play(&mut reader, &mut morse);
+        play(&mut reader, &mut morse)?;
     } else {
         // 標準入力から電文を取得
         let mut reader = BufReader::new(stdin());
-        play(&mut reader, &mut morse);
+        play(&mut reader, &mut morse)?;
     }
+
+    return Ok(());
 }

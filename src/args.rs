@@ -1,5 +1,6 @@
 use std::{path::PathBuf, process::exit};
 
+use anyhow::{anyhow, Result};
 use clap::{Parser, ValueEnum};
 
 #[derive(Clone, Debug, PartialEq, ValueEnum)]
@@ -52,44 +53,48 @@ pub struct Args {
 
 /// コマンドライン引数を解析し構造体に取り込む
 /// オプションの範囲検査やファイルの有無の検査も行う
-pub fn get_args() -> Args {
+pub fn get_args() -> Result<Args> {
     let opt = Args::parse();
     println!("{:#?}", opt);
 
     // エラーならメッセージを出力して終了
-    check_range(&opt);
+    check_range(&opt)?;
 
     // デバッグモードならここで正常終了
     if opt.debug {
         exit(0)
     }
-    return opt;
+    return Ok(opt);
 }
 
-pub fn check_range(opt: &Args) {
+pub fn check_range(opt: &Args) -> Result<()> {
     if opt.wpm < 3 || 60 < opt.wpm {
-        panic!("error: wpm out is of range ( 3 .. 60 )");
+        return Err(anyhow!("error: wpm out is of range ( 3 .. 60 )"));
     }
 
     if opt.frequency < 400.0 || 1200.0 < opt.frequency {
-        panic!("error: frequency is out of range ( 400.0 .. 1200.0 )");
+        return Err(anyhow!(
+            "error: frequency is out of range ( 400.0 .. 1200.0 )"
+        ));
     }
 
     if opt.volume < 0.001 || 1.0 < opt.volume {
-        panic!("error: volume is out of range ( 0.001 .. 1.0 )");
+        return Err(anyhow!("error: volume is out of range ( 0.001 .. 1.0 )"));
     }
 
     if opt.power < 1.0 || 5.0 < opt.power {
-        panic!("error: power is out of range ( 1.0 .. 5.0 )");
+        return Err(anyhow!("error: power is out of range ( 1.0 .. 5.0 )"));
     }
 
     if let Some(path) = &opt.input {
         if let Ok(is_exist) = path.try_exists() {
             if !is_exist {
-                panic!("error: file does not exist.");
+                return Err(anyhow!("error: file does not exist."));
             }
         } else {
-            panic!("error: file is unavailable.");
+            return Err(anyhow!("error: file is unavailable."));
         }
     }
+
+    return Ok(());
 }
