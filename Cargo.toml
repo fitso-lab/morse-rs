@@ -13,3 +13,4 @@ predicates = "*"
 [dependencies]
 clap = { version = "*", features = ["derive"] }
 cpal = "*"
+stringreader = "*"

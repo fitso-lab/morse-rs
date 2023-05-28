@@ -2,11 +2,13 @@ use std::{
     collections::HashMap,
     fs::File,
     io::{stdin, BufRead, BufReader},
+    str::Split,
 };
 
-use cpal::Stream;
+use stringreader::StringReader;
+
 use morse_rs::{
-    args::get_args,
+    args::{check_range, get_args, Args},
     morse::{calc_dit, genarate_stream, Morse},
 };
 
@@ -43,109 +45,176 @@ use morse_rs::{
 /// 600Hz ... 55.555 回 per 33.33ms
 /// ```
 
-fn play<R>(reader: &mut R, is_first: &mut bool, morse: &mut Morse, stream: &mut Stream)
+fn play<R>(reader: &mut R, morse: &mut Morse)
 where
     R: BufRead,
 {
-    for (_, line) in reader.lines().enumerate() {
-        if let Ok(mut line) = line {
-            if line.starts_with("#!") {
-                // 行頭がオプション定義ならオプションとして解釈
-                let mut split = line.split('!');
-                split.next();
-                if let Some(l) = split.next() {
-                    if l.len() == 0 {
-                        continue;
-                    }
-                    let mut s = l.split_whitespace();
+    let mut is_first = true;
 
-                    let mut frequency = morse.frequency;
-                    let mut volume = morse.volume;
-                    let mut wpm = morse.wpm;
+    let mut frequency = morse.frequency;
+    let mut volume = morse.volume;
+    let mut wpm = morse.wpm;
+    // let mut dit_duration = morse.dit_duration;
 
-                    loop {
-                        match s.next() {
-                            Some("--frequency") => {
+    // let mut player: Option<&str> = None;
+    let mut stream = genarate_stream(frequency, volume, morse.power);
+
+    let mut players: HashMap<String, (f32, f32, u8, u32)> = HashMap::from([(
+        "default".to_string(),
+        (frequency, volume, wpm, morse.dit_duration),
+    )]);
+
+    for (_, result) in reader.lines().enumerate() {
+        let mut line = result.unwrap();
+        if line.starts_with("#!") {
+            // 行頭がオプション定義ならオプションとして解釈
+            let mut split: Split<char> = line.split('!');
+            split.next();
+            if let Some(l) = split.next() {
+                if l.len() == 0 {
+                    continue;
+                }
+                let mut s = l.split_whitespace();
+
+                let mut o_frequency: Option<f32> = None;
+                let mut o_volume: Option<f32> = None;
+                let mut o_wpm: Option<u8> = None;
+                let mut o_player: Option<String> = None;
+
+                loop {
+                    if let Some(w) = s.next() {
+                        match w.to_lowercase().as_str() {
+                            "--frequency" => {
                                 if let Some(v) = s.next() {
-                                    // 数値を取り込む
-                                    frequency = v.parse().unwrap();
+                                    if o_frequency.is_none() {
+                                        // 数値を取り込む
+                                        o_frequency = Some(v.parse().unwrap());
+                                    } else {
+                                        eprintln!("Warning: Multiple 'frequency' are defined.")
+                                    }
                                 }
                             }
-                            Some("--volume") => {
+                            "--volume" => {
                                 if let Some(v) = s.next() {
-                                    // 数値を取り込む
-                                    volume = v.parse().unwrap();
+                                    if o_volume.is_none() {
+                                        // 数値を取り込む
+                                        o_volume = Some(v.parse().unwrap());
+                                    } else {
+                                        eprintln!("Warning: Multiple `volume` are defined.")
+                                    }
                                 }
                             }
-                            Some("--wpm") => {
+                            "--wpm" => {
                                 if let Some(v) = s.next() {
-                                    // 数値を取り込む
-                                    wpm = v.parse().unwrap();
+                                    if o_wpm.is_none() {
+                                        // 数値を取り込む
+                                        o_wpm = Some(v.parse().unwrap());
+                                    } else {
+                                        eprintln!("Warning: Multiple `wpm` are defined.")
+                                    }
+                                }
+                            }
+                            "--player" => {
+                                if let Some(v) = s.next() {
+                                    if o_player.is_none() {
+                                        // 重複チェック
+                                        o_player = Some(v.trim().to_string());
+                                    } else {
+                                        eprintln!("Warning: Multiple `player` are defined.")
+                                    }
                                 }
                             }
                             // 想定外のものは無視
-                            Some(_) => {}
-                            // 取り出せなくなれば終了
-                            None => break,
+                            _ => {
+                                eprintln!("Warning: Undefined word({}).", w);
+                            }
                         }
+                    } else {
+                        // 取り出せなくなれば終了
+                        break;
                     }
-                    // TODO 範囲チェックが必要！
-                    morse.frequency = frequency;
-                    morse.volume = volume;
-                    morse.wpm = wpm;
-                    morse.dit_duration = calc_dit(wpm);
+                }
+                if let Some(w) = o_frequency {
+                    frequency = w;
+                }
+                if let Some(w) = o_volume {
+                    volume = w;
+                }
+                if let Some(w) = o_wpm {
+                    wpm = w;
+                }
+                let mut opt = Args::default();
+                opt.wpm = wpm;
+                opt.frequency = frequency;
+                opt.volume = volume;
+                opt.power = morse.power;
 
-                    // TODO Powerも保持する？
-                    *stream = genarate_stream(frequency, volume, 2.5);
+                //TODO 範囲チェックエラーは、メッセージを出力して終了。暫定
+                check_range(&opt);
+                if let Some(ref w) = o_player {
+                    if o_frequency.is_none() && o_volume.is_none() && o_wpm.is_none() {
+                        // すべて指定なしの場合は、定義されたプレイヤーを参照する
+                        if let Some((w_frequency, w_volume, w_wpm, w_dit_duration)) = players.get(w)
+                        {
+                            frequency = *w_frequency;
+                            volume = *w_volume;
+                            wpm = *w_wpm;
+                            morse.dit_duration = *w_dit_duration;
+                        } else {
+                            eprintln!("Warning: `player`({}) is not defined.", w)
+                        }
+                    } else {
+                        // どれか一つでも指定されているのなら、'player'定義として登録
+                        morse.dit_duration = calc_dit(wpm);
+                        players.insert(w.to_string(), (frequency, volume, wpm, morse.dit_duration));
+                    }
+                }
 
-                    println!(
-                        "Option({}): frequency({}) volume({})",
-                        line, frequency, volume
-                    );
-                    continue;
-                }
-            } else {
-                // '#'以降の文字列をコメントとして破棄
-                if let Some(l) = line.split('#').next() {
-                    line = l.trim().to_string();
-                }
-                if line.len() == 0 {
-                    // 空行は無視
-                    continue;
-                }
+                stream = genarate_stream(frequency, volume, morse.power);
+
+                println!(
+                    "Option({}): frequency({:#?}) volume({:#?}) wpm({:#?}) player({:#?})",
+                    line, o_frequency, o_volume, o_wpm, o_player
+                );
+                continue;
             }
-            if *is_first {
-                *is_first = false;
-            } else {
-                morse.word_space();
+        } else {
+            // '#'以降の文字列をコメントとして破棄
+            if let Some(l) = line.split('#').next() {
+                line = l.trim().to_string();
             }
-
-            morse.play(&line.as_str(), &stream);
+            if line.len() == 0 {
+                // 空行は無視
+                continue;
+            }
         }
+        if is_first {
+            is_first = false;
+        } else {
+            morse.word_space();
+        }
+
+        morse.play(&line, &stream);
     }
 }
 
 fn main() {
     let opt = get_args();
 
-    let mut stream = genarate_stream(opt.frequency, opt.volume, opt.power);
-
-    let streams = HashMap::from([("default", &stream)]);
-
     let mut morse = Morse::new(&opt);
 
     if let Some(ref text) = opt.text {
         // コマンドラインに電文を記述
-        morse.play(&text, &stream);
+        let reader = StringReader::new(text);
+        let mut bufreader = BufReader::new(reader);
+        play(&mut bufreader, &mut morse);
     } else if let Some(ref input) = opt.input {
         // 電文ファイルを指定
-        let mut is_first = true;
         let mut reader = BufReader::new(File::open(input.to_str().unwrap()).unwrap());
-        play(&mut reader, &mut is_first, &mut morse, &mut stream);
+        play(&mut reader, &mut morse);
     } else {
         // 標準入力から電文を取得
-        let mut is_first = true;
         let mut reader = BufReader::new(stdin());
-        play(&mut reader, &mut is_first, &mut morse, &mut stream);
+        play(&mut reader, &mut morse);
     }
 }

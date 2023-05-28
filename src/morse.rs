@@ -84,6 +84,7 @@ pub struct Morse {
     pub frequency: f32,
     pub volume: f32,
     pub wpm: u8,
+    pub power: f32,
 }
 
 impl Morse {
@@ -99,6 +100,7 @@ impl Morse {
             frequency: opt.frequency,
             volume: opt.volume,
             wpm: opt.wpm,
+            power: opt.power,
         };
     }
 

@@ -8,7 +8,7 @@ pub enum DumpType {
     Line,
 }
 
-#[derive(Clone, Debug, Parser)]
+#[derive(Clone, Debug, Parser, Default)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// Morse code speed in `wpm` units
@@ -56,6 +56,17 @@ pub fn get_args() -> Args {
     let opt = Args::parse();
     println!("{:#?}", opt);
 
+    // エラーならメッセージを出力して終了
+    check_range(&opt);
+
+    // デバッグモードならここで正常終了
+    if opt.debug {
+        exit(0)
+    }
+    return opt;
+}
+
+pub fn check_range(opt: &Args) {
     if opt.wpm < 3 || 60 < opt.wpm {
         panic!("error: wpm out is of range ( 3 .. 60 )");
     }
@@ -81,9 +92,4 @@ pub fn get_args() -> Args {
             panic!("error: file is unavailable.");
         }
     }
-
-    if opt.debug {
-        exit(0)
-    }
-    return opt;
 }
