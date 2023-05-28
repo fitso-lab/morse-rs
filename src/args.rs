@@ -28,6 +28,10 @@ pub struct Args {
     #[arg(long, default_value = "2.5")]
     pub power: f32,
 
+    /// Farnsworth timing
+    #[arg(long, default_value = "1.0")]
+    pub farnsworth_timing: f32,
+
     /// Dump message line by per char or per line
     #[arg(short, long)]
     pub dump: Option<DumpType>,
@@ -84,6 +88,12 @@ pub fn check_range(opt: &Args) -> Result<()> {
 
     if opt.power < 1.0 || 5.0 < opt.power {
         return Err(anyhow!("error: power is out of range ( 1.0 .. 5.0 )"));
+    }
+
+    if opt.farnsworth_timing < 1.0 || 5.0 < opt.farnsworth_timing {
+        return Err(anyhow!(
+            "error: farnsworth timing is out of range ( 1.0 .. 5.0 )"
+        ));
     }
 
     if let Some(path) = &opt.input {

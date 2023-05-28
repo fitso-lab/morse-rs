@@ -15,6 +15,8 @@ Options:
   -f, --frequency <FREQUENCY>  Morse code frequency [default: 600.0]
   -v, --volume <VOLUME>        Morse code volume [default: 0.2]
       --power <POWER>          power for audio volume [default: 2.5]
+      --farnsworth-timing <FARNSWORTH_TIMING>
+                               Farnsworth timing [default: 1.0]
   -d, --dump <DUMP>            Dump message line by per char or per line [possible values: char, line]
       --debug                  Perform command analysis only
   -p, --pipe                   Read messages from standard input
@@ -49,21 +51,25 @@ ex.
       - `-w, --wpm <WPM>`
       - `-f, --frequency <FREQUENCY>`
       - `-v, --volume <VOLUME>`
-      - `-l, --label <LABEL>`
+      - `    --farnsworth-timing <FARNSWORTH_TIMING>`
+      - `    --player <PLAYER>`
     - 基本は、`-w -f -v` です。`-l` で、名前をつけておくと、`-l` で名前を指定するだけで、以前の定義を利用できます。
 [^1]: コマンドラインオプションと同じに見えますが、パーサーが違うため、解釈されないことがあります。
 
 # Install
 
 # Improvement
-   - 音量を指数関数で変化するようにした<br>
-     音量(0-1)をそのまま使用すると、いきなり大きくなり、後半は殆ど変化しない感じとなるため<br>
-     オーディオボリュームのＣタイプの抵抗曲線となるように変換式を加えた。<br>
-     自身の聴感では、2.5がちょうどよいのでデフォルトとした。<br>
-   - 実行中に対応する行または文字を出力することで、どの音が出ているのかわかるようにした。<br>
-   - コマンドラインの引数解析を `clap` で実現した。<br>
-     3種類の電文の与え方についての、排他チェックを `clap` で行うことができた。<br>
-     ただし、項目の範囲チェックやファイルの存在チェックは、別途実装した。
+  - farnsworth-timingを導入。文字の速度はそのままに、文字や語間の速度を遅くできる。
+  - 電文毎に音の高さや速度等の変更が可能<br>
+    相手先毎に音の高さや速度等を変えることで区別して聞き取りやすくできる<br>
+  - 音量を指数関数で変化するようにした<br>
+    音量(0-1)をそのまま使用すると、いきなり大きくなり、後半は殆ど変化しない感じとなるため<br>
+    オーディオボリュームのＣタイプの抵抗曲線となるように変換式を加えた。<br>
+    自身の聴感では、2.5がちょうどよいのでデフォルトとした。<br>
+  - 実行中に対応する行または文字を出力することで、どの音が出ているのかわかるようにした。<br>
+  - コマンドラインの引数解析を `clap` で実現した。<br>
+    3種類の電文の与え方についての、排他チェックを `clap` で行うことができた。<br>
+    ただし、項目の範囲チェックやファイルの存在チェックは、別途実装した。
 
 # ToDo
 - 複数の行で音の高さや速度等を変更する<br>

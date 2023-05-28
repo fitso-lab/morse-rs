@@ -84,6 +84,7 @@ pub struct Morse {
     pub frequency: f32,
     pub volume: f32,
     pub wpm: u8,
+    pub farnsworth_timing: f32,
     pub power: f32,
 }
 
@@ -100,6 +101,7 @@ impl Morse {
             frequency: opt.frequency,
             volume: opt.volume,
             wpm: opt.wpm,
+            farnsworth_timing: opt.farnsworth_timing,
             power: opt.power,
         };
     }
@@ -139,7 +141,7 @@ impl Morse {
                     }
                     '-' => {
                         stream.play().unwrap();
-                        self.litter_space();
+                        self.dash_space();
                         stream.pause().unwrap();
                         self.intra_space();
                     }
@@ -169,14 +171,22 @@ impl Morse {
         sleep(duration);
     }
 
-    fn litter_space(&self) {
+    fn dash_space(&self) {
         let duration = Duration::from_millis(3 * self.dit_duration as u64);
 
         sleep(duration);
     }
 
+    fn litter_space(&self) {
+        let duration =
+            Duration::from_millis((3.0 * self.dit_duration as f32 * self.farnsworth_timing) as u64);
+
+        sleep(duration);
+    }
+
     pub fn word_space(&self) {
-        let duration = Duration::from_millis(7 * self.dit_duration as u64);
+        let duration =
+            Duration::from_millis((7.0 * self.dit_duration as f32 * self.farnsworth_timing) as u64);
 
         sleep(duration);
     }

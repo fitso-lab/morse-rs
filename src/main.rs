@@ -54,14 +54,21 @@ where
     let mut frequency = morse.frequency;
     let mut volume = morse.volume;
     let mut wpm = morse.wpm;
+    let mut farnsworth_timing = morse.farnsworth_timing;
     // let mut dit_duration = morse.dit_duration;
 
     // let mut player: Option<&str> = None;
     let mut stream = genarate_stream(frequency, volume, morse.power);
 
-    let mut players: HashMap<String, (f32, f32, u8, u32)> = HashMap::from([(
+    let mut players: HashMap<String, (f32, f32, u8, f32, u32)> = HashMap::from([(
         "default".to_string(),
-        (frequency, volume, wpm, morse.dit_duration),
+        (
+            frequency,
+            volume,
+            wpm,
+            farnsworth_timing,
+            morse.dit_duration,
+        ),
     )]);
 
     for (_, result) in reader.lines().enumerate() {
@@ -79,6 +86,7 @@ where
                 let mut o_frequency: Option<f32> = None;
                 let mut o_volume: Option<f32> = None;
                 let mut o_wpm: Option<u8> = None;
+                let mut o_farnsworth_timing: Option<f32> = None;
                 let mut o_player: Option<String> = None;
 
                 loop {
@@ -120,6 +128,18 @@ where
                                     }
                                 }
                             }
+                            "--farnsworth_timing" => {
+                                if let Some(v) = s.next() {
+                                    if o_farnsworth_timing.is_none() {
+                                        // 数値を取り込む
+                                        o_farnsworth_timing = Some(v.parse().unwrap());
+                                    } else {
+                                        return Err(anyhow!(
+                                            "Warning: Multiple `farnsworth timing` are defined."
+                                        ));
+                                    }
+                                }
+                            }
                             "--player" => {
                                 if let Some(v) = s.next() {
                                     if o_player.is_none() {
@@ -151,8 +171,12 @@ where
                 if let Some(w) = o_wpm {
                     wpm = w;
                 }
+                if let Some(w) = o_farnsworth_timing {
+                    farnsworth_timing = w;
+                }
                 let mut opt = Args::default();
                 opt.wpm = wpm;
+                opt.farnsworth_timing = farnsworth_timing;
                 opt.frequency = frequency;
                 opt.volume = volume;
                 opt.power = morse.power;
@@ -162,11 +186,18 @@ where
                 if let Some(ref w) = o_player {
                     if o_frequency.is_none() && o_volume.is_none() && o_wpm.is_none() {
                         // すべて指定なしの場合は、定義されたプレイヤーを参照する
-                        if let Some((w_frequency, w_volume, w_wpm, w_dit_duration)) = players.get(w)
+                        if let Some((
+                            w_frequency,
+                            w_volume,
+                            w_wpm,
+                            w_farnsworth_timing,
+                            w_dit_duration,
+                        )) = players.get(w)
                         {
                             frequency = *w_frequency;
                             volume = *w_volume;
                             wpm = *w_wpm;
+                            farnsworth_timing = *w_farnsworth_timing;
                             morse.dit_duration = *w_dit_duration;
                         } else {
                             return Err(anyhow!("Warning: `player`({}) is not defined.", w));
@@ -174,15 +205,24 @@ where
                     } else {
                         // どれか一つでも指定されているのなら、'player'定義として登録
                         morse.dit_duration = calc_dit(wpm);
-                        players.insert(w.to_string(), (frequency, volume, wpm, morse.dit_duration));
+                        players.insert(
+                            w.to_string(),
+                            (
+                                frequency,
+                                volume,
+                                wpm,
+                                farnsworth_timing,
+                                morse.dit_duration,
+                            ),
+                        );
                     }
                 }
 
                 stream = genarate_stream(frequency, volume, morse.power);
 
                 println!(
-                    "Option({}): frequency({:#?}) volume({:#?}) wpm({:#?}) player({:#?})",
-                    line, o_frequency, o_volume, o_wpm, o_player
+                    "Option({}): frequency({:#?}) volume({:#?}) wpm({:#?}) farnsworth_timing({:#?}) player({:#?})",
+                    line, o_frequency, o_volume, o_wpm, o_farnsworth_timing, o_player
                 );
                 continue;
             }
