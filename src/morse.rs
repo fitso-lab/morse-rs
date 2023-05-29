@@ -34,10 +34,8 @@ fn genarate_stream(frequency: f32, volume: f32, power: f32) -> Stream {
     let device = host
         .default_output_device()
         .expect("failed to find output device");
-    // println!("Output device: {}", device.name().unwrap());
 
     let config: StreamConfig = device.default_output_config().unwrap().into();
-    // println!("Default output config: {:?}", config);
 
     let sample_rate = config.sample_rate.0 as f32;
     let channels = config.channels as usize;
@@ -77,6 +75,35 @@ fn calc_dit(wpm: u8) -> u32 {
     return 60 * 1000 / (50 * wpm as u32);
 }
 
+/// オプション内容を出力
+fn println_option(
+    o_player: Option<String>,
+    o_frequency: Option<f32>,
+    o_volume: Option<f32>,
+    o_wpm: Option<u8>,
+    o_farnsworth_timing: Option<f32>,
+) {
+    print!("#!");
+
+    if let Some(player) = o_player {
+        print!(" --player {}", player);
+    }
+    if let Some(frequency) = o_frequency {
+        print!(" --frequency {}", frequency);
+    }
+    if let Some(volume) = o_volume {
+        print!(" --volume {}", volume);
+    }
+    if let Some(wpm) = o_wpm {
+        print!(" --wpm {}", wpm);
+    }
+    if let Some(farnsworth_timing) = o_farnsworth_timing {
+        print!(" --farnsworth_timing {}", farnsworth_timing);
+    }
+
+    println!();
+}
+
 #[derive(Clone)]
 pub struct Morse {
     /// 文字->モールス音変換用テーブル
@@ -84,6 +111,9 @@ pub struct Morse {
 
     /// 出力単位
     dump: Option<DumpType>,
+
+    /// オプションの詳細
+    verbose: bool,
 
     /// 短点の長さ
     dit_duration: u32,
@@ -108,6 +138,7 @@ impl Morse {
         return Morse {
             table,
             dump: opt.dump.clone(),
+            verbose: opt.verbose,
             dit_duration,
             frequency: opt.frequency,
             volume: opt.volume,
@@ -396,10 +427,10 @@ impl Morse {
 
                     stream = genarate_stream(frequency, volume, self.power);
 
-                    println!(
-                    "Option({}): frequency({:#?}) volume({:#?}) wpm({:#?}) farnsworth_timing({:#?}) player({:#?})",
-                    line, o_frequency, o_volume, o_wpm, o_farnsworth_timing, o_player
-                );
+                    if self.verbose {
+                        println_option(o_player, o_frequency, o_volume, o_wpm, o_farnsworth_timing);
+                    }
+
                     continue;
                 }
             } else {

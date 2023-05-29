@@ -40,6 +40,10 @@ pub struct Args {
     #[arg(long)]
     debug: bool,
 
+    /// Verbose mode.
+    #[arg(long)]
+    pub verbose: bool,
+
     // group 設定では、グループ内の項目は、すべて指定ないか、たかだか一つの項目を指定することはができる。
     // group の一つに必須条件をつければ、グループの一つの指定が必須となる
     /// The message directly as a command line argument
@@ -59,7 +63,10 @@ pub struct Args {
 /// オプションの範囲検査やファイルの有無の検査も行う
 pub fn get_args() -> Result<Args> {
     let opt = Args::parse();
-    println!("{:#?}", opt);
+
+    if opt.verbose {
+        println!("{:#?}", opt);
+    }
 
     // エラーならメッセージを出力して終了
     check_range(&opt)?;
